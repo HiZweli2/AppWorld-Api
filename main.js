@@ -1,7 +1,9 @@
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.14.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.14.0/firebase-analytics.js";
-  import { getAuth,GoogleAuthProvider,signInWithPopup,createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.14.0/firebase-auth.js";
+  import { getAuth,GoogleAuthProvider,signInWithPopup,
+           createUserWithEmailAndPassword,
+           signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.14.0/firebase-auth.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -27,34 +29,29 @@
   const googleButton = document.getElementById("googleButton");
 
   const emailButton = document.getElementById("emailButton");
+
+  const signInButton = document.getElementById("signInButton");
  
-  // const email = document.getElementById("email").value;
-
-  // const password = document.getElementById("password").value;
-
-  // const email = "zwelitest@gmail.com";
-
-  // const password = "password";
-
-
-
-// console.log(email);
 
   googleButton.addEventListener('click',googleSignIN); 
 
   emailButton.addEventListener('click',signUpWithEmail); 
+
+  signInButton.addEventListener('click',signInWithEmail); 
  
   function googleSignIN (){
     signInWithPopup(auth, provider)
-    .then((result) => {
+    .then((response) => {
       // This gives you a Google Access Token. You can use it to access the Google API.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-     
+      const credential = GoogleAuthProvider.credentialFromResult(response);
+     console.log(response);
       const token = credential.accessToken;
       // The signed-in user info.
-      const user = result.user;
-      console.log(result._tokenResponse.refreshToken);
-      validateResponse(result._tokenResponse.refreshToken);
+      const userEmail = response._tokenResponse.email;
+      const refreshToken = response._tokenResponse.refreshToken;
+      const userfirstName = response._tokenResponse.firstName;
+      const userlastName = response._tokenResponse.lastName;
+      saveCredentials(userEmail,refreshToken,userfirstName,userlastName);
       // ...
     }).catch((error) => {
       // Handle Errors here.
@@ -70,41 +67,61 @@
 
 
   function signUpWithEmail (){
+
     let email = document.getElementById("email").value;
     let password = document.getElementById("password").value;
-
-    if(!email || !password ? console.log('error with password or email') : console.log('success'))
-    {
-      console.log("Invaild email or password")
-    }else{
+    let name = document.getElementById("name").value;
+    let surname = document.getElementById("surname").value;
       createUserWithEmailAndPassword(auth,email, password)
       .then((userCredential) => {
         // Signed in 
-        const user = userCredential.user;
-        // ...
+        console.log(userCredential);
+        userCredential._tokenResponse.firstName = name;
+        userCredential._tokenResponse.lastName = surname;
+        const userEmail = userCredential._tokenResponse.email;
+        const refreshToken = userCredential._tokenResponse.refreshToken;
+        const userfirstName = userCredential._tokenResponse.firstName;
+        const userlastName = userCredential._tokenResponse.lastName;
+        console.log(userCredential);
+        saveCredentials(userEmail,refreshToken,userfirstName,userlastName);
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
         console.log(errorMessage)
         // ..
-      });
-    }
+      }); 
   }
 
-  let validateResponse = (refreshToken, user)=>{
+  function signInWithEmail(){
+    let email = document.getElementById("signInEmail").value;
+    let password = document.getElementById("signInPassword").value;
+    signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in 
+      console.log(userCredential);
+      const user = userCredential.user;
+      // ...
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+    });
+  }
 
-    const headers = new Headers("Authorization" , refreshToken)
-    headers.append()
-   
-    fetch("http://localhost:3000/api/post/login",{
+
+
+  let saveCredentials = (userEmail,refreshToken,userfirstName,userlastName)=>{
+    
+    let user = {email:userEmail, name:userfirstName, surname:userlastName};
+    fetch("http://localhost:3000/api/post/createUsers",{
       method: "POST",
-      headers:headers
-
+      headers: {
+        "content-type": "application/json",
+        "authorization" : `Bearer ${refreshToken}`
+      },
       // todo: send user in in the request body
+      body: JSON.stringify(user)
     }).then(response=>{
     })
-    console.log(refreshToken);
   }
-
-  // console.log();
